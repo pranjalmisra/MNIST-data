@@ -1,0 +1,121 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import tensorflow as tf
+mnist =  pd.read_csv(r"C:\UMNIST_Train.csv")
+
+
+
+print(mnist.head()) ### 1st column label is my Y variable 
+#mnist.iloc[4:10,]
+mnist.shape
+
+
+### below few lines are just to show case more about the mnist data its not actuall part of the code
+
+sen_col = mnist.iloc[1]  ## selecting the 1st row and all column
+
+
+sen_col =  sen_col.iloc[ 1:786 ,]  ### droping the 1st column as it was non numeric
+
+
+len(sen_col )   ## get the length as 784
+
+abc  = np.array(sen_col ) ## convert into array so that we can reshape
+
+abc = abc.reshape(28,28)  ### 28 * 28  = 784
+
+plt.imshow(abc)
+
+plt.imshow(abc ,  cmap =  'gist_gray') ### if you want to see in the grey scale 
+
+### now creating the model
+
+mnist.shape
+mnist_x = mnist.iloc[ : , 1:786]
+
+mnist_y = mnist.iloc[:,0]
+from sklearn.model_selection import train_test_split
+
+mnist_x_train , mnist_x_test , mnist_y_train , mnist_y_test =  train_test_split(mnist_x , mnist_y , 
+                                                                                test_size = .2 , random_state = 101)
+
+print(mnist_x_train.shape)
+print(mnist_x_test.shape)
+print("-----")
+print(mnist_y_train.shape)
+print(mnist_y_test.shape)
+
+
+mnist_x_train  = np.array(mnist_x_train)
+ 
+### important as we convert 784 in 28,28 cell
+for i in range(len(mnist_x_train)):
+    mnist_x_train[i,].reshape(28,28)
+    
+
+
+mnist_x_test  = np.array(mnist_x_test)
+
+for i in range(len(mnist_x_test)):
+    mnist_x_test[i,].reshape(28,28)
+
+
+mnist_x_train = tf.keras.utils.normalize(mnist_x_train)  ### to normalize the data, if we do not normalize then the accuracy is very less
+mnist_x_test =  tf.keras.utils.normalize(mnist_x_test )  ### to normalize the data, if we do not normalize then the accuracy is very less
+
+
+model = tf.keras.models.Sequential()     ## neural network is initiliazed
+#model.add(tf.keras.layers.Flatten())    #  its not mandatory as we have not used CNN
+model.add(tf.keras.layers.Dense(128 ,  activation = tf.nn.relu))  ## 1st layer
+model.add(tf.keras.layers.Dense(128 ,  activation = tf.nn.relu))  ## 2nd layer
+model.add(tf.keras.layers.Dense(128 ,  activation = tf.nn.relu))  ## 3rd layer  
+model.add(tf.keras.layers.Dense(10 ,  activation = tf.nn.softmax))  ## last layer so softmax is must as we have more than categories
+model.compile(optimizer = 'adam'  , loss = 'sparse_categorical_crossentropy' , metric = ['accuracy'])
+
+## Sequential is used to initiliaze are neural network. Neural network are also sequence of layers
+#The Adam optimization algorithm is an extension to stochastic gradient descent that has recently seen broader adoption
+#for deep learning applications in computer vision and natural language processing.
+# dense indicates your fully connected layer
+# 128 is number of neutrons in each layer 
+#  metric = ['accuracy'] , performance metric
+# model.compile  ...complies the model
+## in flattening we convert all the pooled features that we created through convolutional and max poling into large vector...
+#      which becomes the I/P for the fully connected layer
+
+### sparse_categorical_crossentropy is a loss function, used to measure the dissimilarity between... 
+#  ..the distribution of observed class labels and the predicted probabilities of class membership.
+
+
+
+mnist_y_train  = np.array(mnist_y_train)  ### very imp, other wise we get error  while model fit.
+
+
+model.fit(mnist_x_train  , mnist_y_train , epochs = 3)
+
+
+from sklearn.metrics import confusion_matrix , classification_report
+
+pred1  = model.predict_classes(mnist_x_test)
+
+tab1  = confusion_matrix(pred1 , mnist_y_test)
+pred1  = model.predict_classes(mnist_x_test)
+tab1
+#### below is the output
+array([[754,   0,   5,   2,   0,   1,   0,   0,   0,   2],
+       [  0, 939,   6,   4,   0,   1,   2,   2,   3,   2],
+       [  1,   1, 808,   4,   1,   0,   0,   6,   2,   0],
+       [  0,   2,  10, 828,   0,  14,   0,   2,  13,  15],
+       [  0,   1,   9,   1, 806,   1,   2,  13,   4,  25],
+       [  7,   1,   1,   4,   0, 705,   4,   2,   5,   1],
+       [ 16,   0,   6,   2,   4,   6, 813,   0,   3,   1],
+       [  2,   1,   4,   3,   1,   0,   0, 842,   2,  15],
+       [  5,   3,  10,   5,   1,   3,   3,   0, 785,   6],
+       [  4,   0,   0,   6,   5,   2,   0,   6,   3, 810]], dtype=int64)
+
+
+
+
+
+tab1.diagonal().sum()  / tab1.sum()  ### get the accuracy of around 97%
